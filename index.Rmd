@@ -1,0 +1,71 @@
+---
+title       : Stocks Analysis
+subtitle    : Simple Shiny App
+author      : 
+job         : 
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+---
+
+## Simple Stock Analysis App
+
+1. Loads historical prices for a given stock symbol
+2. Calculates daily relative returns of stock prices
+3. Can show time series of daily returns and histogram of returns distribution
+4. Calculates autocorrelations of daily returns
+
+--- .class #id 
+
+## Loading Time Series
+
+Load timeseries of specified stock symbols from yahoo finance using `quantmod` R package. The example below loads time series of Apple Inc. stock history starting 2010-01-01 and ending 2014-10-26. The corresponding plot is shown below.
+```{r, echo=FALSE}
+library(quantmod)
+```
+```{r}
+aapl <- getSymbols("AAPL", auto.assign=FALSE, from='2010-01-01', to='2014-10-26')
+```
+```{r echo=FALSE, fig.width=10, fig.height=5, fig.align='center'}
+plot(index(aapl), coredata(aapl)[,6], type='l', main="Stock Price History of Apple Inc.",
+     xlab="Date", ylab="Adjusted Price")
+```
+
+---
+## Relative Returns
+Relative returns of stock prices time series $\{S_k\}$ are defined as: 
+$$r_k = (S_k-S_{k-1})/S_{k-1}$$
+The time series and distribution of daily relative returns of Apple Inc. are shown below:
+```{r, echo =FALSE}
+returns <- ROC(aapl); returns <- returns[complete.cases(returns)]
+```
+```{r echo=FALSE, fig.width=12, fig.height=5, fig.align='center'}
+ret.df <- coredata(returns)
+
+old_par <- par(mfrow=c(1,2))
+plot(index(returns), ret.df[,6], type='l', main="History of Relative Returns",
+     xlab="Date", ylab="Daily Returns", yaxt="n")
+axis(2, at=pretty(ret.df[,6]), lab= paste0(pretty(ret.df[,6]) * 100, "%"), las=TRUE)
+
+hist(ret.df[,6], breaks = 20, xlab="Relative Returns", xaxt="n", 
+     main="Distribution of Relative Returns")
+axis(1, at=pretty(ret.df[,6]), lab= paste0(pretty(ret.df[,6]) * 100, "%"), las=TRUE)  
+par(old_par)
+
+```
+
+
+---
+## Autocorrelations
+
+In order to test whether daily returns are indepentent we can calculate autocorrelation using `acf()` R function.
+
+```{r echo=FALSE, fig.width=10, fig.height=5, fig.align='center'}
+acorr <- acf(ret.df[,6], plot=FALSE)
+plot(acorr, main="Autocorrelation of daily returns", xlab="Lag",
+      ylab="Autocorrelation")
+```
+
